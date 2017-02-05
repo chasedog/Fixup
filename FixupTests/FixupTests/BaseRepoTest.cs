@@ -21,24 +21,30 @@ namespace FixupTests
             _Repository = new Repository(_WorkingDirectoryPath);
         }
 
-        protected void CreateFile(string name)
+        protected void CreateFile(params string[] names)
         {
-            var filePath = GetFullPath(name);
-            using (var stream = new StreamWriter(filePath))
+            foreach (var fileName in names)
             {
-                stream.Write(Guid.NewGuid());
+                var filePath = GetFullPath(fileName);
+                using (var stream = new StreamWriter(filePath))
+                {
+                    stream.Write(Guid.NewGuid());
+                }
             }
         }
 
-        protected void ChangeFile(string name)
+        protected void ChangeFile(params string[] names)
         {
-            var filePath = GetFullPath(name);
-            if (!File.Exists(filePath))
-                throw new InvalidOperationException($"File must exist to change it {filePath}");
-
-            using (var stream = new StreamWriter(filePath))
+            foreach (var fileName in names)
             {
-                stream.Write(Guid.NewGuid());
+                var filePath = GetFullPath(fileName);
+                if (!File.Exists(filePath))
+                    throw new InvalidOperationException($"File must exist to change it {filePath}");
+
+                using (var stream = new StreamWriter(filePath))
+                {
+                    stream.Write(Guid.NewGuid());
+                }
             }
         }
 
@@ -50,7 +56,7 @@ namespace FixupTests
         [TearDown]
         public void TearDown()
         {
-            _Repository.Dispose();
+            _Repository?.Dispose();
             DirectoryHelper.DeleteDirectory(_WorkingDirectoryPath);
         }
     }
@@ -83,27 +89,23 @@ namespace FixupTests
         }
     }
 
+    [TestFixture]
     public class MultipleCommitRepoTest : BaseRepoTest
     {
         protected override void SetUp()
         {
             base.SetUp();
-            CreateFile("A");
-            CreateFile("B");
-            CreateFile("C");
-            CreateFile("D");
+            CreateFile("A", "B", "C", "D");
 
             Commands.Stage(_Repository, new[] { "A", "B", "C", "D" });
             _Repository.Commit("Initial commit", _DefaultSignature, _DefaultSignature);
 
-            ChangeFile("A");
-            ChangeFile("B");
+            ChangeFile("A", "B");
             
             Commands.Stage(_Repository, new[] { "A", "B" });
             _Repository.Commit("Changed A and B", _DefaultSignature, _DefaultSignature);
 
-            ChangeFile("C");
-            ChangeFile("D");
+            ChangeFile("C", "D");
 
             Commands.Stage(_Repository, new[] { "C", "D" });
             _Repository.Commit("Changed C and D", _DefaultSignature, _DefaultSignature);
